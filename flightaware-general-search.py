@@ -12,7 +12,15 @@ import time
 
 username = input("FlightAware API Username:\t")
 password = input("FlightAware API Password:\t")
+origin = input("Origin:\t")
 destination = input("Destination:\t")
+
+startTime = 1522993920
+#startTime = int(time.time())
+
+endTime = 1523016120
+#endTime is 3 hours ahead of startTime in Unix epoch time
+#endTime = int(time.time()) + 10800
 
 session = Session()
 session.auth = HTTPBasicAuth(username, password)
@@ -21,20 +29,36 @@ transport = Transport(cache=SqliteCache(), session=session)
 client = Client('http://flightxml.flightaware.com/soap/FlightXML2/wsdl', transport = transport)
 
 #api call for flight schedules
-response0 = zeep.helpers.serialize_object(client.service.AirlineFlightSchedules(int(time.time()), int(time.time()) + 86400, origin = "ATL", destination = destination, airline = "", flightno = "", howMany = 15, offset = 0), target_cls=collections.OrderedDict)
+response0 = zeep.helpers.serialize_object(client.service.AirlineFlightSchedules(startTime, endTime, origin = origin, destination = destination, airline = "", flightno = "", howMany = 15, offset = 0), target_cls=collections.OrderedDict)
+
 
 #This is the Ordered Dictionary containing flight numbers
-#Key = Administrating Carrier Flight No, Value = list containing all crosslisted flight No's
+#Key: flightDepartureTime
+#Value: a List object with every flight number under that flight. The operating flight number is the first in the list. ["Actual Flight Number", "Some Other Flight Number", "Some Flight Number"]
 #The ordered dict is ordered by earliest departure
-flightOrdDict = collections.OrderedDict()
+#flightOrdDict = collections.OrderedDict()
+flightDict = {}
 
-for x in range(0, len(response0["data"]) - 1):
-    if (response0["data"][x]["ident"] not in flightOrdDict):
-        if (response0["data"][x]["acutal_ident"] == ""):
-            flightOrdDict[response0["data"][x]["acutal_ident"]] = [response0["data"][x]["acutal_ident"]]
-        else if (response0["data"][x]["actual_ident"] not in flightOrdDict):
+#Iterates over the flights going from A to B departing in at most three hours
+for x in range(0, len(response0["data"])):
 
-    if(lastFlight != response0["data"][x]["actual_ident"]):
+    keyObject = response0["data"][x]["departuretime"]
 
+    #Creates the list used as a key
+    #if (response0["data"][x]["actual_ident"] == ""):
+    #    keyObject = [response0["data"][x]["ident"], response0["data"][x]["departuretime"]]
+    #else:
+    #    keyObject = [response0["data"][x]["actual_ident"], response0["data"][x]["departuretime"]]
 
-print(flightList)
+    if (keyObject not in flightDict):
+        if (response0["data"][x]["actual_ident"] == ""):
+            flightDict[keyObject] = [response0["data"][x]["ident"]]
+        else:
+            flightDict[keyObject] = [response0["data"][x]["actual_ident"], response0["data"][x]["ident"]]
+    else:
+        if (response0["data"][x]["ident"] != flightDict[keyObject][0]):
+            flightDict[keyObject].append(response0["data"][x]["ident"])
+
+flightOrderedDict = collections.OrderedDict(sorted(flightDict.items(), key=lambda t: t[0]))
+
+print(flightOrderedDict)
