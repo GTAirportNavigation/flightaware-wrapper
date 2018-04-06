@@ -31,8 +31,8 @@ response0 = zeep.helpers.serialize_object(client.service.AirlineFlightSchedules(
 
 
 #This is the Ordered Dictionary containing flight numbers
-#Key: flightDepartureTime
-#Value: a List object with every flight number under that flight. The operating flight number is the first in the list. ["Actual Flight Number", "Some Other Flight Number", "Some Flight Number"]
+#Key: "Actual Flight Number"
+#Value: [departureTimeInt, "Actual Flight Number", "Some Other Flight Number", "Some Flight Number"]
 #The ordered dict is ordered by earliest departure
 #flightOrdDict = collections.OrderedDict()
 flightDict = {}
@@ -40,23 +40,23 @@ flightDict = {}
 #Iterates over the flights going from A to B departing in at most three hours
 for x in range(0, len(response0["data"])):
 
-    keyObject = response0["data"][x]["departuretime"]
-
+    #keyObject = response0["data"][x]["departuretime"]
+ 
     #Creates the list used as a key
-    #if (response0["data"][x]["actual_ident"] == ""):
-    #    keyObject = [response0["data"][x]["ident"], response0["data"][x]["departuretime"]]
-    #else:
-    #    keyObject = [response0["data"][x]["actual_ident"], response0["data"][x]["departuretime"]]
+    if (not response0["data"][x]["actual_ident"]):
+        keyObject = response0["data"][x]["ident"]
+    else:
+        keyObject = response0["data"][x]["actual_ident"]
 
     if (keyObject not in flightDict):
-        if (response0["data"][x]["actual_ident"] == ""):
-            flightDict[keyObject] = [response0["data"][x]["ident"]]
+        if (not response0["data"][x]["actual_ident"]):
+            flightDict[keyObject] = [response0["data"][x]["departuretime"], response0["data"][x]["ident"]]
         else:
-            flightDict[keyObject] = [response0["data"][x]["actual_ident"], response0["data"][x]["ident"]]
+            flightDict[keyObject] = [response0["data"][x]["departuretime"], response0["data"][x]["actual_ident"], response0["data"][x]["ident"]]
     else:
-        if (response0["data"][x]["ident"] != flightDict[keyObject][0]):
+        if (response0["data"][x]["actual_ident"]):
             flightDict[keyObject].append(response0["data"][x]["ident"])
 
-flightOrderedDict = collections.OrderedDict(sorted(flightDict.items(), key=lambda t: t[0]))
+flightOrderedDict = collections.OrderedDict(sorted(flightDict.items(), key=lambda t: t[1][0]))
 
 print(flightOrderedDict)
