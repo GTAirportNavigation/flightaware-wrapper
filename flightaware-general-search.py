@@ -15,12 +15,10 @@ password = input("FlightAware API Password:\t")
 origin = input("Origin:\t")
 destination = input("Destination:\t")
 
-startTime = 1522993920
-#startTime = int(time.time())
+startTime = int(time.time())
 
-endTime = 1523016120
 #endTime is 3 hours ahead of startTime in Unix epoch time
-#endTime = int(time.time()) + 10800
+endTime = int(time.time()) + 10800
 
 session = Session()
 session.auth = HTTPBasicAuth(username, password)
